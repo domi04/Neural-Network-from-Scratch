@@ -1,4 +1,3 @@
-from re import A
 import numpy as np
 import nnfs
 from nnfs.datasets import spiral_data
@@ -23,4 +22,3 @@ dense1 = Layer_Dense(2,3)
 dense1.forward(X)
 
 print(dense1.output[:5])
-
