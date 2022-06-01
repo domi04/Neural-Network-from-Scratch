@@ -15,10 +15,21 @@ class Layer_Dense:
         self.output = np.dot(inputs, self.weights) + self.biases
 
 
+class Activation_ReLU:
+   
+    def forward(self, inputs):
+        # Calculating output values from inputs using the activation function ReLU 
+        self.output = np.maximum(0, inputs)
+
+
 X,y = spiral_data(samples=100, classes=3)
 
 dense1 = Layer_Dense(2,3)
 
+activation1 = Activation_ReLU()
+
 dense1.forward(X)
 
-print(dense1.output[:5])
+activation1.forward(dense1.output)
+
+print(activation1.output[:5])
