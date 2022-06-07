@@ -1,6 +1,7 @@
 import numpy as np
 import nnfs
 from nnfs.datasets import spiral_data
+from sklearn.metrics import accuracy_score
 nnfs.init()
 
 class Layer_Dense:
@@ -25,9 +26,39 @@ class Activation_Softmax:
 
     def forward(self, inputs):
         exp_values = np.exp(inputs - np.max(inputs, axis=1, keepdims=True)) # Raising Eulers number e to the inputs value and subtracting the max
-                                                                            # value to prevent the output to be very large values
+                                                                            # value to prevent the output from being very large values
         probabilities = exp_values / np.sum(exp_values, axis=1, keepdims=True) # Normalizing the values  
         self.output = probabilities
+
+class Loss:
+    def calculate(self,output,y):
+
+        sample_loss = self.forward(output,y) # Sample Losses
+
+        data_loss = np.mean(sample_loss) # Mean Loss
+
+        return data_loss
+
+class Loss_CatgeoricalCrossentropy(Loss):
+    def forward(self,y_pred, y_true):
+        
+        samples = len(y_pred)
+
+        #C lip data to prevent divsion by 0
+        y_pred_clipped = np.clip(y_pred, 1e-7, 1-1e-7)
+
+        # Probabilities for target values if categorical labels
+        if len(y_true.shape) == 1:
+            correct_confidences = y_pred_clipped[
+                range(samples),
+                y_true]
+
+        # Probabilities for one-hot encoded target values
+        elif len(y_true.shape) == 2:
+            correct_confidences = np.sum(y_pred_clipped * y_true, axis=1)
+
+        negative_log_likelyhoods = - np.log(correct_confidences)
+        return negative_log_likelyhoods
 
 X,y = spiral_data(samples=100, classes=3)
 
@@ -39,6 +70,8 @@ dense2 = Layer_Dense(3,3)
 
 activation2 = Activation_Softmax()
 
+loss_function = Loss_CatgeoricalCrossentropy()
+
 dense1.forward(X)
 
 activation1.forward(dense1.output)
@@ -47,4 +80,13 @@ dense2.forward(activation1.output)
 
 activation2.forward(dense2.output)
 
-print(activation2.output[:5])
+loss = loss_function.calculate(activation2.output, y)
+
+# Accuracy Calculation
+predictions = np.argmax(activation2.output, axis=1)
+if len(y.shape) == 2:
+    y = np.argmax(y, axis=1)
+accuracy_score = np.mean (predictions==y)
+
+print(f"Accuracy:{accuracy_score}")
+print(f"Loss: {loss}")
