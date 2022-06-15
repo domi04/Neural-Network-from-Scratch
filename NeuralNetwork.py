@@ -1,7 +1,6 @@
 import numpy as np
 import nnfs
 from nnfs.datasets import spiral_data
-from sklearn.metrics import accuracy_score
 nnfs.init()
 
 class Layer_Dense:
@@ -13,14 +12,28 @@ class Layer_Dense:
 
     def forward(self, inputs):
         # Calculating output values from inputs, weights and biases
+        self.inputs = inputs
         self.output = np.dot(inputs, self.weights) + self.biases
+
+    def backward(self, dvalues):
+        # Gradients on parameters
+        self.dweights = np.dot(self.inputs.T, dvalues)
+        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
+        # Gradient on values
+        self.dinputs = np.dot(dvalues, self.weights.T)
 
 
 class Activation_ReLU:
  
     def forward(self, inputs):
         # Calculating output values from inputs using the activation function ReLU 
+        self.inputs = inputs 
         self.output = np.maximum(0, inputs)
+
+    def backward(self, dvalues):
+        self.dinputs = dvalues.copy()
+        # Zero Gradient where input values were negative
+        self.dinputs[self.inputs <= 0] = 0
 
 class Activation_Softmax:
 
@@ -89,4 +102,4 @@ if len(y.shape) == 2:
 accuracy_score = np.mean (predictions==y)
 
 print(f"Accuracy:{accuracy_score}")
-print(f"Loss: {loss}")
+print(f"Loss:{loss}")
