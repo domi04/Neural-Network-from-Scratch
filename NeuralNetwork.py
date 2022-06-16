@@ -44,6 +44,7 @@ class Activation_Softmax:
         self.output = probabilities
 
 class Loss:
+    
     def calculate(self,output,y):
 
         sample_loss = self.forward(output,y) # Sample Losses
@@ -53,6 +54,7 @@ class Loss:
         return data_loss
 
 class Loss_CatgeoricalCrossentropy(Loss):
+   
     def forward(self,y_pred, y_true):
         
         samples = len(y_pred)
@@ -72,6 +74,22 @@ class Loss_CatgeoricalCrossentropy(Loss):
 
         negative_log_likelyhoods = - np.log(correct_confidences)
         return negative_log_likelyhoods
+
+    def backward(self, dvalues, y_true):
+        # number of samples
+        samples = len(dvalues)
+        # number of labels in every sample
+        labels = len(dvalues[0])
+
+        # if labels are sparse, turn them into one-hot vector 
+        if len(y_true.shape) == 1:
+            y_true = np.eye(labels)[y_true]
+
+        # calculate gradient
+        self.dinputs = -y_true / dvalues
+        # normalize gradient
+        self.dinputs = self.dinputs / samples
+
 
 X,y = spiral_data(samples=100, classes=3)
 
