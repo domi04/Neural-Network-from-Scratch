@@ -105,6 +105,32 @@ class Loss_CatgeoricalCrossentropy(Loss):
         # normalize gradient
         self.dinputs = self.dinputs / samples
 
+class Activation_Softmax_Loss_CategoricalCrossentropy():
+
+    # creates activation and loss function objects
+    self.activation = Activation_Softmax()
+    self.loss = Loss_CatgeoricalCrossentropy()
+
+    def forward(self, inputs, y_true):
+        self.activation.forward(inputs)
+        self.output = self.activation.output
+        # calculate and return loss value
+        return self.loss.calculate(self.output, y_true)
+
+    def backward(self, dvalues, y_true):
+        # number of samples
+        samples = len(dvalues)
+    
+        # if labels are one-hot encoded, turn them into discrete values
+        if len(y_true.shape) == 2:
+            y_true = np.argmax(y_true, axis=1)
+
+        # copy to modify safely
+        self.dinputs = dvalues.copy()
+        # calculate gradient
+        self.dinputs[range(samples), y_true] -= 1
+        # normalize gradient
+        self.dinputs = self.dinputs / samples
 
 X,y = spiral_data(samples=100, classes=3)
 
