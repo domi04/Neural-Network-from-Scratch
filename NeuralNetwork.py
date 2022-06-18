@@ -108,8 +108,9 @@ class Loss_CatgeoricalCrossentropy(Loss):
 class Activation_Softmax_Loss_CategoricalCrossentropy():
 
     # creates activation and loss function objects
-    self.activation = Activation_Softmax()
-    self.loss = Loss_CatgeoricalCrossentropy()
+    def __init__(self):
+        self.activation = Activation_Softmax()
+        self.loss = Loss_CatgeoricalCrossentropy()
 
     def forward(self, inputs, y_true):
         self.activation.forward(inputs)
@@ -140,9 +141,7 @@ activation1 = Activation_ReLU()
 
 dense2 = Layer_Dense(3,3)
 
-activation2 = Activation_Softmax()
-
-loss_function = Loss_CatgeoricalCrossentropy()
+loss_activation = Activation_Softmax_Loss_CategoricalCrossentropy()
 
 dense1.forward(X)
 
@@ -150,15 +149,23 @@ activation1.forward(dense1.output)
 
 dense2.forward(activation1.output)
 
-activation2.forward(dense2.output)
+loss = loss_activation.forward(dense2.output, y)
 
-loss = loss_function.calculate(activation2.output, y)
+loss_activation.backward(loss_activation.output, y)
+dense2.backward(loss_activation.dinputs)
+activation1.backward(dense2.dinputs)
+dense1.backward(activation1.dinputs)
 
 # Accuracy Calculation
-predictions = np.argmax(activation2.output, axis=1)
+predictions = np.argmax(loss_activation.output, axis=1)
 if len(y.shape) == 2:
     y = np.argmax(y, axis=1)
 accuracy_score = np.mean (predictions==y)
+
+print(dense1.dweights)
+print(dense1.dbiases)
+print(dense2.dweights)
+print(dense2.dbiases)
 
 print(f"Accuracy:{accuracy_score}")
 print(f"Loss:{loss}")
