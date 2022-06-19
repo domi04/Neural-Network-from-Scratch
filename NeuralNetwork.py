@@ -135,12 +135,24 @@ class Activation_Softmax_Loss_CategoricalCrossentropy():
 
 class Optimizer_SGD:
     # initialize optimizer with a default learning rate of 1
-    def __init__(self, learning_rate=1.0):
+    def __init__(self, learning_rate=1., decay=0.):
         self.learning_rate = learning_rate
-
+        self.current_learning_rate = learning_rate
+        self.decay = decay
+        self.iterations = 0
+    
+    # call once before parameter updates 
+    def pre_update_params(self):
+        if self.decay:
+            self.current_learning_rate = self.learning_rate * (1. / (1. + self.decay * self.iterations))
+    
+    # update parameter
     def update_params(self, layer):
-        layer.weights += -self.learning_rate * layer.dweights
-        layer.biases += -self.learning_rate * layer.dbiases
+        layer.weights += -self.current_learning_rate * layer.dweights
+        layer.biases += -self.current_learning_rate * layer.dbiases
+
+    def post_update_params(self):
+        self.iterations += 1
 
 X,y = spiral_data(samples=100, classes=3)
 
@@ -152,7 +164,7 @@ dense2 = Layer_Dense(64,3)
 
 loss_activation = Activation_Softmax_Loss_CategoricalCrossentropy()
 
-optimizer = Optimizer_SGD()
+optimizer = Optimizer_SGD(decay=1e-3)
 
 # train loop
 for epoch in range(10001):
@@ -170,9 +182,10 @@ for epoch in range(10001):
     accuracy_score = np.mean (predictions==y)
 
     if not epoch % 100:
-        print(f'epoch: {epoch} ' +
-              f'accuracy: {accuracy_score:.3f} ' +
-              f'loss: {loss:.3f}')
+        print(f'epoch: {epoch}, ' +
+              f'accuracy: {accuracy_score:.3f}, ' +
+              f'loss: {loss:.3f}, ' +
+              f'lr: {optimizer.current_learning_rate}')
     
     # backward pass
     loss_activation.backward(loss_activation.output, y)
@@ -181,5 +194,7 @@ for epoch in range(10001):
     dense1.backward(activation1.dinputs)
 
     # update weights and biases
+    optimizer.pre_update_params()
     optimizer.update_params(dense1)
     optimizer.update_params(dense2)
+    optimizer.post_update_params()
