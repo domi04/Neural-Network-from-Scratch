@@ -5,10 +5,15 @@ nnfs.init()
 
 class Layer_Dense:
 
-    def __init__(self,n_inputs, n_neurons):
+    def __init__(self,n_inputs, n_neurons, weight_regularizer_l1=0, weight_regularizer_l2=0, bias_regularizer_l1=0, bias_regularizer_l2=0):
         # Initialize weights and biases
         self.weights = 0.01 * np.random.randn(n_inputs, n_neurons)
         self.biases = np.zeros((1, n_neurons))
+        # set regularization strength
+        self.weight_regularizer_l1 = weight_regularizer_l1 
+        self.weight_regularizer_l2 = weight_regularizer_l2
+        self.bias_regularizer_l1 = bias_regularizer_l1
+        self.bias_regularizer_l2 = bias_regularizer_l2
 
     def forward(self, inputs):
         # Calculating output values from inputs, weights and biases
@@ -67,6 +72,32 @@ class Loss:
         data_loss = np.mean(sample_loss) # Mean Loss
 
         return data_loss
+
+    def regularization_loss(self,layer):
+        
+        # by default
+        regularization_loss = 0
+
+        # L1 regularization - weights
+        # calculate only when factor greater than 0
+        if layer.weight_regularizer_l1 > 0:
+            regularization_loss += layer.weight_regularizer_l1 * np.sum(np.abs(layer.weights))
+
+        # L2 regularition - weights
+        if layer.weight_regularizer_l2 > 0:
+            regularization_loss += layer.weight_regularizer_l2 * np.sum(layer.weights * layer.weights)
+
+        # L1 regularization - biases 
+        # calculate only when factor greater than 0
+        if layer.bias_regularizer_l1 > 0:
+            regularization_loss += layer.bias_regularizer_l1 * np.sum(np.abs(layer.biases))
+
+        # L2 regularization - biases
+        # L2 regularition - weights
+        if layer.weight_regularizer_l2 > 0:
+            regularization_loss += layer.bias_regularizer_l2 * np.sum(layer.biases * layer.biases)
+
+        return regularization_loss
 
 class Loss_CatgeoricalCrossentropy(Loss):
    
@@ -342,7 +373,12 @@ for epoch in range(10001):
     dense1.forward(X)
     activation1.forward(dense1.output)
     dense2.forward(activation1.output)
-    loss = loss_activation.forward(dense2.output, y)
+    data_loss = loss_activation.forward(dense2.output, y)
+
+    # regularization penalty
+    regularization_loss = loss_activation.loss.regularization_loss(dense1) + loss_activation.loss.regularization_loss(dense2)
+    
+    loss = data_loss + regularization_loss
 
     # Accuracy Calculation
     predictions = np.argmax(loss_activation.output, axis=1)
