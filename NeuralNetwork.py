@@ -1,6 +1,7 @@
 import numpy as np
 import nnfs
 from nnfs.datasets import spiral_data
+from torch import dropout
 nnfs.init()
 
 class Layer_Dense:
@@ -47,6 +48,21 @@ class Layer_Dense:
         # Gradient on values
         self.dinputs = np.dot(dvalues, self.weights.T)
 
+class Layer_Dropout:
+
+    def __init__(self, rate):
+        self.rate = 1 - rate
+
+    def forward(self, inputs):
+        self.inputs = inputs
+        # Generate and save scaled mask
+        self.binary_mask = np.random.binomial(1, self.rate, size=inputs.shape) / self.rate
+        # Apply mask to output values
+        self.output = inputs * self.binary_mask
+
+    def backward(self, dvalues):
+        # Gradient on values
+        self.dinputs = dvalues * self.binary_mask
 
 class Activation_ReLU:
  
@@ -380,11 +396,13 @@ dense1 = Layer_Dense(2,64, weight_regularizer_l2=5e-4, bias_regularizer_l2=5e-4)
 
 activation1 = Activation_ReLU()
 
+dropout1 = Layer_Dropout(0.1)
+
 dense2 = Layer_Dense(64,3)
 
 loss_activation = Activation_Softmax_Loss_CategoricalCrossentropy()
 
-optimizer = Optimizer_Adam(learning_rate=0.05, decay=5e-7)
+optimizer = Optimizer_Adam(learning_rate=0.05, decay=5e-5)
 
 # train loop
 for epoch in range(10001):
@@ -392,7 +410,8 @@ for epoch in range(10001):
     # forward pass
     dense1.forward(X)
     activation1.forward(dense1.output)
-    dense2.forward(activation1.output)
+    dropout1.forward(activation1.output)
+    dense2.forward(dropout1.output)
     data_loss = loss_activation.forward(dense2.output, y)
 
     # regularization penalty
@@ -417,7 +436,8 @@ for epoch in range(10001):
     # backward pass
     loss_activation.backward(loss_activation.output, y)
     dense2.backward(loss_activation.dinputs)
-    activation1.backward(dense2.dinputs)
+    dropout1.backward(dense2.dinputs)
+    activation1.backward(dropout1.dinputs)
     dense1.backward(activation1.dinputs)
 
     # update weights and biases
@@ -428,7 +448,7 @@ for epoch in range(10001):
 
 
 # Validate the model with a unseen datasett
-X_test, y_test = spiral_data(100, classes=3)
+X_test, y_test = spiral_data(samples=100, classes=3)
 
 # only a forward pass 
 dense1.forward(X_test)
