@@ -1,7 +1,6 @@
 import numpy as np
 import nnfs
 from nnfs.datasets import spiral_data
-from torch import dropout
 nnfs.init()
 
 class Layer_Dense:
